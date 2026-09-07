@@ -5,6 +5,7 @@ Responsibility: Communicate with the Groq API and parse response schemas.
 
 import json
 import os
+import re
 from typing import Any, Dict
 from groq import Groq
 from pydantic import BaseModel, Field
@@ -26,7 +27,7 @@ class AnalysisResult(BaseModel):
 class ResumeAnalyzerService:
     """Manages AI-driven comparison between resumes and job descriptions."""
 
-    def __init__(self, api_key: str | None = None, model_name: str = "openai/gpt-oss-20b"):
+    def __init__(self, api_key: str | None = None, model_name: str = "llama-3.1-80b-instant"):
         self.api_key = api_key or os.getenv("GROQ_API_KEY")
         if not self.api_key:
             raise ValueError("Groq API key missing. Pass it or set the GROQ_API_KEY environment variable.")
@@ -44,19 +45,22 @@ class ResumeAnalyzerService:
                 {"role": "user", "content": user_prompt},
             ],
             response_format={"type": "json_object"},
-            temperature=0.2,
+            temperature=0.1,
         )
 
         content = response.choices[0].message.content
         if not content:
             raise ValueError("Received an empty response from Groq API.")
 
-        raw_data = json.loads(content)
+        # Clean potential markdown formatting (```json ... ```)
+        cleaned_content = re.sub(r"^```(?:json)?\s*|\s*```$", "", content.strip(), flags=re.DOTALL)
+
+        raw_data = json.loads(cleaned_content)
         validated_result = AnalysisResult(**raw_data)
         return validated_result.model_dump()
 
 
 def analyze_resume(resume_text: str, job_description: str, api_key: str | None = None) -> Dict[str, Any]:
-    """Convenience functional wrapper for backwards compatibility."""
+    """Convenience functional wrapper to prevent Streamlit Cloud import errors."""
     service = ResumeAnalyzerService(api_key=api_key)
     return service.analyze(resume_text, job_description)
