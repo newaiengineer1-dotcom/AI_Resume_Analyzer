@@ -27,7 +27,7 @@ class AnalysisResult(BaseModel):
 class ResumeAnalyzerService:
     """Manages AI-driven comparison between resumes and job descriptions."""
 
-    def __init__(self, api_key: str | None = None, model_name: str = "openai/gpt=oss-20b"):
+    def __init__(self, api_key: str | None = None, model_name: str = "openai/gpt-oss-20b"):
         self.api_key = api_key or os.getenv("GROQ_API_KEY")
         if not self.api_key:
             raise ValueError("Groq API key missing. Pass it or set the GROQ_API_KEY environment variable.")
